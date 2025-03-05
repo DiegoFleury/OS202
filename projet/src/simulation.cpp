@@ -87,7 +87,7 @@ void analyze_arg( int nargs, char* args[], ParamsType& params )
     if (pos < key.size())
     {
         auto subkey = std::string(key, pos+7);
-        params.wind[0] = std::stoul(subkey);
+        params.wind[0] = std::stod(subkey);
         auto pos = subkey.find(",");
         if (pos == subkey.size())
         {

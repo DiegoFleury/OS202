@@ -81,7 +81,7 @@ Model::update()
         // Récupération de la coordonnée lexicographique de la case en feu :
         LexicoIndices coord = get_lexicographic_from_index(f.first);
         // Et de la puissance du foyer
-        double        power = log_factor(f.second);
+        double power = log_factor(f.second);
 
 
         // On va tester les cases voisines pour contamination par le feu :

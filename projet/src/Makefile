@@ -11,19 +11,22 @@ CXXFLAGS2 = ${CXXFLAGS} -O2 -march=native -Wall
 CXXFLAGS += -O3 -march=native -Wall
 endif
 
-ALL= simulation.exe 
+ALL= simulation.bin
 
 default:	help
 
 all: $(ALL)
 
 clean:
-	@rm -fr *.o *.exe *~
+	@rm -fr *.o *.exe *.bin *~
+
+run:
+	./$(ALL)
 
 .cpp.o:
 	$(CXX) $(CXXFLAGS2) -c $^ -o $@	
 
-simulation.exe : display.o display.hpp model.o model.hpp simulation.o
+simulation.bin: display.o display.hpp model.o model.hpp simulation.o
 	$(CXX) $(CXXFLAGS2) $^ -o $@ $(LIB)	
 
 help:
