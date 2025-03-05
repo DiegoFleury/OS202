@@ -202,11 +202,44 @@ int main( int nargs, char* args[] )
     auto simu = Model( params.length, params.discretization, params.wind,
                        params.start);
     SDL_Event event;
-    while (simu.update())
+    while (true)
     {
+
+        // ------------------------------------------------------------------------------------------------//
+        // Temps total pour un pas de temps (calcul + affichage)
+        auto start_total = std::chrono::high_resolution_clock::now();
+
+        // Début du chronomètre pour l'avancement en temps
+        auto start_avancement = std::chrono::high_resolution_clock::now();
+        bool is_running = simu.update();  // Mise à jour de l'incendie
+        auto end_avancement = std::chrono::high_resolution_clock::now();
+
+        // Si la simulation est terminée, on arrête la boucle
+        if (!is_running) break;
+
         if ((simu.time_step() & 31) == 0) 
             std::cout << "Time step " << simu.time_step() << "\n===============" << std::endl;
-        displayer->update( simu.vegetal_map(), simu.fire_map() );
+        
+        // Début du chronomètre pour l'affichage
+        auto start_affichage = std::chrono::high_resolution_clock::now();
+        displayer->update(simu.vegetal_map(), simu.fire_map());  // Rendu graphique
+        auto end_affichage = std::chrono::high_resolution_clock::now();
+        
+        // Fin du chronomètre pour le temps total
+        auto end_total = std::chrono::high_resolution_clock::now();
+        // ------------------------------------------------------------------------------------------------//
+
+        // Calcul des temps
+        double T_avancement = std::chrono::duration<double>(end_avancement - start_avancement).count();
+        double T_affichage = std::chrono::duration<double>(end_affichage - start_affichage).count();
+        double T_total = std::chrono::duration<double>(end_total - start_total).count();
+
+        // Affichage des temps mesurés
+        std::cout << "T_avancement : " << T_avancement << " s\n";
+        std::cout << "T_affichage  : " << T_affichage << " s\n";
+        std::cout << "T_total      : " << T_total << " s\n";
+        std::cout << "============================\n";
+
         if (SDL_PollEvent(&event) && event.type == SDL_QUIT)
             break;
         std::this_thread::sleep_for(0.1s);

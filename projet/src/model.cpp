@@ -47,7 +47,7 @@ Model::Model( double t_length, unsigned t_discretization, std::array<double,2> t
         p1 = alpha0 + alpha1*m_wind_speed + alpha2*(m_wind_speed*m_wind_speed);
     else 
         p1 = alpha0 + alpha1*t_max_wind + alpha2*(t_max_wind*t_max_wind);
-    p2 = 0.3;
+    p2 = 0.99;
 
     if (m_wind[0] > 0)
     {
