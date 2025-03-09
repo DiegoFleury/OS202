@@ -214,6 +214,10 @@ int main(int nargs, char* args[])
 
     while (true)
     {
+        while (SDL_PollEvent(&event))
+            if (event.type == SDL_QUIT)
+                return EXIT_SUCCESS;
+        
         // Temps total pour un pas de temps (calcul + affichage)
         auto start_total = std::chrono::high_resolution_clock::now();
 
@@ -243,10 +247,8 @@ int main(int nargs, char* args[])
 
         // Sauvegarde des temps dans le fichier CSV
         file << simu.time_step() << "," << T_avancement << "," << T_affichage << "," << T_total << "\n";
-
-        if (SDL_PollEvent(&event) && event.type == SDL_QUIT)
-            break;
-        std::this_thread::sleep_for(0.1s);
+        
+        // std::this_thread::sleep_for(0.1s);
     }
 
     // Fermeture du fichier après la simulation

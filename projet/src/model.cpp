@@ -9,7 +9,7 @@ namespace
 {
     double pseudo_random(std::size_t index, std::size_t time_step)
     {
-        std::uint_fast32_t xi = std::uint_fast32_t(index * (time_step + 1));
+        std::uint_fast32_t xi = std::uint_fast32_t(index * (time_step + 10000 + 1));
         std::uint_fast32_t r  = (48271 * xi) % 2147483647;
         return r / 2147483646.;
     }
