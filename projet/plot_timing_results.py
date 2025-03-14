@@ -37,6 +37,11 @@ def plot_timing_results(csv_file):
     plt.grid()
     
     # Afficher le graphique
-    plt.show()
+    plt.savefig(csv_file + ".png")
+    # plt.show()
 
 plot_timing_results("timing_results.csv")
+# plot_timing_results("timing_results_1.csv")
+# plot_timing_results("timing_results_2.csv")
+# plot_timing_results("timing_results_3.csv")
+# plot_timing_results("timing_results_4.csv")
