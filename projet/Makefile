@@ -1,6 +1,20 @@
-include Make_linux.inc
-#include Make_msys2.inc
-#include Make_osx.inc
+# Diretório para os arquivos .inc
+PLATFORM_DIR= platform
+
+# Definir a plataforma desejada (linux, msys2, osx)
+PLATFORM ?= linux  # Padrão: linux (pode ser sobrescrito na linha de comando)
+PLATFORM := $(strip $(PLATFORM))
+
+# Escolher o arquivo de configuração correto com base na plataforma
+ifeq ($(PLATFORM), linux)
+    include $(PLATFORM_DIR)/Make_linux.inc
+else ifeq ($(PLATFORM), msys2)
+    include $(PLATFORM_DIR)/Make_msys2.inc
+else ifeq ($(PLATFORM), osx)
+    include $(PLATFORM_DIR)/Make_osx.inc
+else
+    $(error Platform invalide! Utilisez PLATFORM=linux, PLATFORM=msys2 ou PLATFORM=osx)
+endif
 
 CXXFLAGS = -std=c++17 -Iinclude  # Adiciona o diretório include
 ifdef DEBUG
