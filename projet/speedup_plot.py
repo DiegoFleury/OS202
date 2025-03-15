@@ -1,61 +1,127 @@
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
-import glob
-import re
+import numpy as np
 
-def compute_speedup():
-    # Buscar arquivos timing_results_NUMERO.csv
-    files = glob.glob("timing_results_*.csv")
+# Répertoire de base où les tests sont stockés
+BASE_DIR = "tests"
 
-    # Dicionário para armazenar os tempos totais de T_avancement
-    timing_data = {}
+# Trouver dynamiquement les répertoires d'Amdahl et de Gustafson
+amdal_dirs = [d for d in os.listdir(BASE_DIR) if d.startswith("amdal_")]
+gustafson_dirs = [d for d in os.listdir(BASE_DIR) if d.startswith("gustafson_")]
 
-    for file in files:
-        # Extrair número de threads do nome do arquivo
-        match = re.search(r"timing_results_(\d+).csv", file)
-        if match:
-            num_threads = int(match.group(1))
-            
-            # Carregar o CSV
-            df = pd.read_csv(file)
-            
-            # Verificar se a coluna necessária existe
-            if 'T_avancement' not in df.columns:
-                raise ValueError(f"Le fichier {file} ne contient pas la colonne T_avancement.")
-            
-            # Calcular o tempo total como a soma de T_avancement
-            total_time = df['T_avancement'].sum()
-            timing_data[num_threads] = total_time
+if not amdal_dirs or not gustafson_dirs:
+    print("Erreur : Répertoires d'Amdahl ou de Gustafson non trouvés.")
+    exit()
 
-    # Ordenar por número de threads
-    timing_data = dict(sorted(timing_data.items()))
+# Trier pour obtenir la version la plus récente
+amdal_dirs.sort()
+gustafson_dirs.sort()
+AMDAL_DIR = os.path.join(BASE_DIR, amdal_dirs[-1])  # Dernière version
+GUSTAFSON_DIR = os.path.join(BASE_DIR, gustafson_dirs[-1])  # Dernière version
 
-    # Separar os valores para plotagem
-    threads = list(timing_data.keys())
-    times = list(timing_data.values())
+# Extraire la taille de base de Gustafson à partir du nom du répertoire
+gustafson_base_size = int(gustafson_dirs[-1].split("_")[1])
 
-    # Definir T1 (tempo total com 1 thread)
-    T1 = times[0]  # O primeiro valor (threads=1)
+def calculer_speedup_amdahl(dossier):
+    """Calcule l'accélération selon la loi d'Amdahl, en utilisant le temps de pic"""
+    temps_pic = {}
+    for threads in sorted(os.listdir(dossier), key=lambda x: int(x) if x.isdigit() else 0):
+        thread_dir = os.path.join(dossier, threads)
+        if not os.path.isdir(thread_dir):
+            continue
+        
+        fichiers = [os.path.join(thread_dir, f) for f in os.listdir(thread_dir) if f.endswith(".csv")]
+        if not fichiers:
+            continue
+        
+        pics_executions = []
+        for fichier in fichiers:
+            df = pd.read_csv(fichier)
+            pic = df["T_avancement"].max()
+            pics_executions.append(pic)
+        
+        temps_pic[int(threads)] = np.mean(pics_executions)
+    
+    if 1 not in temps_pic:
+        print(f"Erreur : pas de données pour 1 thread dans {dossier}")
+        return None
+    
+    T1 = temps_pic[1]
+    speedups = {threads: T1 / temps for threads, temps in temps_pic.items()}
+    return speedups
 
-    # Calcular speedup
-    speedups = [T1 / T for T in times]
+def calculer_speedup_gustafson(dossier, taille_base):
+    """
+    Calcule l'accélération selon la loi de Gustafson en utilisant le temps de pic
+    """
+    temps_pic = {}
+    tailles = {}
+    
+    for threads_str in sorted(os.listdir(dossier), key=lambda x: int(x) if x.isdigit() else 0):
+        thread_dir = os.path.join(dossier, threads_str)
+        if not os.path.isdir(thread_dir):
+            continue
+        
+        threads = int(threads_str)
+        fichiers = [os.path.join(thread_dir, f) for f in os.listdir(thread_dir) if f.endswith(".csv")]
+        if not fichiers:
+            continue
+        
+        taille_probleme = taille_base * threads
+        tailles[threads] = taille_probleme
+        
+        pics_executions = []
+        for fichier in fichiers:
+            df = pd.read_csv(fichier)
+            pic = df["T_avancement"].max()
+            pics_executions.append(pic)
+        
+        temps_pic[threads] = np.mean(pics_executions)
+    
+    if 1 not in temps_pic:
+        print(f"Erreur : pas de données pour 1 thread dans {dossier}")
+        return None
+    
+    speedups = {}
+    T1_base = temps_pic[1]
+    
+    for threads, temps in temps_pic.items():
+        temps_normalise = temps / threads
+        speedups[threads] = T1_base / temps_normalise
+    
+    return speedups
 
-    # Plotar gráfico de speedup
-    plt.figure(figsize=(10, 5))
-    plt.plot(threads, speedups, marker='o', linestyle='-', label="Speedup réel")
-    plt.plot(threads, threads, linestyle="dashed", color="gray", label="Speedup idéal (N_threads)")
+# Calculer les accélérations
+speedup_amdahl = calculer_speedup_amdahl(AMDAL_DIR)
+speedup_gustafson = calculer_speedup_gustafson(GUSTAFSON_DIR, gustafson_base_size)
 
-    plt.xlabel("Nombre de threads")
-    plt.ylabel("Speedup")
-    plt.title("Speedup en fonction du nombre de threads")
-    plt.legend()
-    plt.grid(True)
+if not speedup_amdahl or not speedup_gustafson:
+    print("Erreur lors du calcul des accélérations. Vérifiez les répertoires et fichiers CSV.")
+    exit()
 
-    # Salvar e exibir gráfico
-    plt.savefig("speedup_plot.png")
-    plt.show()
+# Créer un graphique
+plt.figure(figsize=(10, 6))
 
-    print("Données de speedup enregistrées dans 'speedup_plot.png'.")
+# Tracer les résultats
+plt.plot(list(speedup_amdahl.keys()), list(speedup_amdahl.values()), marker="o", linestyle="-",
+         label=f"Amdahl (amdal_{amdal_dirs[-1].split('_')[1]})", color="blue")
+plt.plot(list(speedup_gustafson.keys()), list(speedup_gustafson.values()), marker="s", linestyle="--",
+         label=f"Gustafson (gustafson_{gustafson_base_size})", color="red")
 
-# Executar análise de speedup
-compute_speedup()
+plt.xlabel("Nombre de Threads")
+plt.ylabel("Accélération")
+plt.title("Comparaison de l'Accélération : Amdahl vs. Gustafson (Basé sur le Temps de Pic)")
+plt.legend()
+plt.grid(True)
+plt.savefig(f"{BASE_DIR}/speedup_comparison_peak_{amdal_dirs[-1]}_{gustafson_dirs[-1]}.png")
+plt.show()
+
+# Afficher les valeurs pour analyse
+print("Temps de pic et accélérations pour Amdahl:")
+for threads, speedup in speedup_amdahl.items():
+    print(f"{threads} threads : {speedup:.2f}x")
+
+print("\nTemps de pic et accélérations pour Gustafson:")
+for threads, speedup in speedup_gustafson.items():
+    print(f"{threads} threads : {speedup:.2f}x")
