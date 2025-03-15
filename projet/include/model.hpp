@@ -4,20 +4,6 @@
 #include <vector>
 #include <unordered_map>
 
-// No arquivo model.hpp, adicione:
-enum class Direction {
-    NORTH,
-    SOUTH,
-    EAST,
-    WEST
-};
-
-struct FirePropagation {
-    std::size_t cell_position;
-    uint8_t fire_intensity;
-    bool is_new_fire;
-};
-
 
 /**
  * @brief 
@@ -50,10 +36,6 @@ public:
 private:
     std::size_t   get_index_from_lexicographic_indices( LexicoIndices t_lexico_indices  ) const;
     LexicoIndices get_lexicographic_from_index        ( std::size_t t_global_index ) const;
-    bool check_direction(std::size_t current_index, double power,
-                          const LexicoIndices& coord, Direction dir,
-                          double alpha_factor, std::size_t random_factor,
-                          std::vector<FirePropagation>& propagations);
 
     double m_length;                    // Taille du carré représentant le terrain (en km)
     double m_distance;                  // Taille d'une case du terrain modélisé

@@ -43,23 +43,23 @@ clean:
 	@rm -fr $(OBJ_DIR) *.o *.exe *.bin *~
 
 run:
-	./$(ALL)
+	mpiexec -n 2 ./$(ALL) -n 500
 
 # Compilação dos .cpp -> .o dentro de obj/
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(DEPS)
 	@mkdir -p $(OBJ_DIR)  # Cria obj/ se não existir
-	$(CXX) $(CXXFLAGS2) -c $< -o $@
+	$(MPICXX) $(CXXFLAGS2) -c $< -o $@
 
 # Linkagem final
 simulation.bin: $(OBJECTS)
-	$(CXX) $(CXXFLAGS2) $^ -o $@ $(LIB)
+	$(MPICXX) $(CXXFLAGS2) $^ -o $@ $(LIB)
 
 help:
 	@echo "Available targets : "
 	@echo "    all            : compile all executables"
 	@echo "Add DEBUG=yes to compile in debug"
 	@echo "Configuration :"
-	@echo "    CXX      :    $(CXX)"
+	@echo "    CXX      :    $(MPICXX)"
 	@echo "    CXXFLAGS :    $(CXXFLAGS)"
 
 %.html: %.md
