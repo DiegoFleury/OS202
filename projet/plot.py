@@ -45,11 +45,11 @@ plt.figure(figsize=(12, 8))
 # Tracer toutes les colonnes sauf TimeStep
 for column in avg_data.columns:
     if column != "TimeStep":
-        plt.plot(avg_data["TimeStep"], avg_data[column], linewidth=2, label=f"{column} (moyenne: {mean_values[column]:.4f})")
+        plt.plot(avg_data["TimeStep"], avg_data[column], linewidth=2, label=f"{column} (max: {mean_values[column].max():.4f})")
 
 plt.xlabel("Pas de temps (TimeStep)")
 plt.ylabel("Valeurs mesurées")
-plt.title("Courbes des mesures avec moyennes")
+plt.title("Courbes des mesures avec max")
 plt.legend()
 plt.grid(True)
 
