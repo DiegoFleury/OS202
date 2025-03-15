@@ -4,7 +4,6 @@
 #include <vector>
 #include <unordered_map>
 
-// No arquivo model.hpp, adicione:
 enum class Direction {
     NORTH,
     SOUTH,
@@ -19,10 +18,6 @@ struct FirePropagation {
 };
 
 
-/**
- * @brief 
- * 
- */
 class Model
 {
 public:

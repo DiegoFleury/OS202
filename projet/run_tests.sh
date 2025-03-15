@@ -1,49 +1,50 @@
 #!/bin/bash
-
 # Vérifie si le bon nombre d'arguments a été fourni
-if [ "$#" -lt 4 ]; then
-    echo "Utilisation : $0 <N_EXEC> <THREADS_LIST> <SIZE> <OUTPUT_DIR>"
-    echo "Exemple : $0 5 \"1 2 4 8\" 50 tests_50/amdal"
+if [ "$#" -lt 3 ]; then
+    echo "Utilisation : $0 <N_EXEC> <SIZE_LIST> <OUTPUT_DIR>"
+    echo "Exemple : $0 5 \"50 100 200 500\" tests_mpi/"
     exit 1
 fi
 
 # Paramètres
 N_EXEC=$1
-THREADS_LIST=($2)
-SIZE=$3
-OUTPUT_DIR=$4  # Nouveau paramètre pour spécifier le répertoire cible
+SIZE_LIST=($2)  # Liste des tailles d'entrée
+OUTPUT_DIR=$3   # Répertoire cible
 
-# Nom du binaire (modifiez si nécessaire)
-BINARIO="./simulation.bin"
+# Nombre fixe de processus (toujours 2)
+PROC=2
 
 # Création du répertoire de sortie si nécessaire
 mkdir -p "$OUTPUT_DIR"
 
-# Boucle sur chaque configuration de threads
-for THREADS in "${THREADS_LIST[@]}"; do
-    echo "Exécution des tests pour $THREADS threads avec taille $SIZE..."
-    
-    # Création du sous-dossier correspondant au nombre de threads
-    DIR="$OUTPUT_DIR/$THREADS"
-    mkdir -p "$DIR"
+# Variable d'environnement pour exécuter SDL sans affichage
+#export SDL_VIDEODRIVER=dummy
 
+# Boucle sur chaque taille d'entrée
+for SIZE in "${SIZE_LIST[@]}"; do
+    echo "Exécution des tests pour taille $SIZE avec $PROC processus..."
+    
+    # Création du sous-dossier correspondant à la taille
+    DIR="$OUTPUT_DIR/size_$SIZE"
+    mkdir -p "$DIR"
+    
     # Exécuter le binaire N_EXEC fois
     for i in $(seq 1 $N_EXEC); do
-        echo "Exécution $i/$N_EXEC pour $THREADS threads avec taille $SIZE..."
+        echo "Exécution $i/$N_EXEC pour taille $SIZE avec $PROC processus..."
         
-        # Définir le nombre de threads dans OpenMP
-        export OMP_NUM_THREADS=$THREADS
-
-        # Exécuter le binaire avec la taille spécifiée et rediriger la sortie
-        $BINARIO -n $SIZE > /dev/null 2>&1
-
-        # Renommer et déplacer le fichier généré
-        CSV_FILE="timing_results_${THREADS}_threads.csv"
-        if [ -f "$CSV_FILE" ]; then
-            mv "$CSV_FILE" "$DIR/timing_results_${THREADS}_threads_v${i}.csv"
+        # Exécuter le binaire en utilisant make run avec les bons paramètres
+        make run NPROCS=$PROC ARGS="-n $SIZE"
+        
+        # Vérifier si le fichier CSV a été généré
+        if [ -f "timing_results.csv" ]; then
+            mv "timing_results.csv" "$DIR/timing_results_size${SIZE}_v${i}.csv"
+            echo "Fichier CSV déplacé avec succès vers $DIR/timing_results_size${SIZE}_v${i}.csv"
         else
-            echo "Attention : Le fichier $CSV_FILE n'a pas été trouvé après l'exécution !"
+            echo "Attention : Le fichier timing_results.csv n'a pas été trouvé après l'exécution !"
         fi
+        
+        # Petit délai pour éviter les conflits
+        sleep 1
     done
 done
 

@@ -1,22 +1,25 @@
-# Diretório para os arquivos .inc
+# Répertoire pour les fichiers .inc
 PLATFORM_DIR= platform
 
-# Definir a plataforma desejada (linux, msys2, osx)
-PLATFORM ?= linux  # Padrão: linux (pode ser sobrescrito na linha de comando)
+# Définir la plateforme souhaitée (linux, msys2, osx)
+PLATFORM ?= linux 
 PLATFORM := $(strip $(PLATFORM))
 
-# Escolher o arquivo de configuração correto com base na plataforma
+# Choisir le fichier de configuration correct selon la plateforme
 ifeq ($(PLATFORM), linux)
-    include $(PLATFORM_DIR)/Make_linux.inc
+include $(PLATFORM_DIR)/Make_linux.inc
 else ifeq ($(PLATFORM), msys2)
-    include $(PLATFORM_DIR)/Make_msys2.inc
+include $(PLATFORM_DIR)/Make_msys2.inc
 else ifeq ($(PLATFORM), osx)
-    include $(PLATFORM_DIR)/Make_osx.inc
+include $(PLATFORM_DIR)/Make_osx.inc
 else
-    $(error Platform invalide! Utilisez PLATFORM=linux, PLATFORM=msys2 ou PLATFORM=osx)
+$(error Plateforme invalide! Utilisez PLATFORM=linux, PLATFORM=msys2 ou PLATFORM=osx)
 endif
 
-CXXFLAGS = -std=c++17 -Iinclude  # Adiciona o diretório include
+# Utiliser uniquement MPICXX et LIB du fichier .inc
+# Ajouter des flags spécifiques pour C++
+CXXFLAGS += -std=c++17 -Iinclude # Ajoute le répertoire include
+
 ifdef DEBUG
 CXXFLAGS += -g -O0 -Wall -fbounds-check -pedantic -D_GLIBCXX_DEBUG
 CXXFLAGS2 = $(CXXFLAGS)
@@ -25,42 +28,51 @@ CXXFLAGS2 = $(CXXFLAGS) -O2 -march=native -Wall
 CXXFLAGS += -O3 -march=native -Wall
 endif
 
+# Nombre de processus MPI - peut être défini en ligne de commande
+NPROCS ?= 2
+
+# Paramètres de simulation - passés via ligne de commande
+ARGS ?=
+
 SRC_DIR = src
 INCLUDE_DIR = include
 OBJ_DIR = obj
-
-SOURCES = $(wildcard $(SRC_DIR)/*.cpp)  # Encontra todos os .cpp em src/
-OBJECTS = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(SOURCES))  # Cria os .o em obj/
-DEPS = $(wildcard $(INCLUDE_DIR)/*.hpp)  # Todos os headers
-
+SOURCES = $(wildcard $(SRC_DIR)/*.cpp) # Trouve tous les .cpp dans src/
+OBJECTS = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(SOURCES)) # Crée les .o dans obj/
+DEPS = $(wildcard $(INCLUDE_DIR)/*.hpp) # Tous les headers
 ALL = simulation.bin
 
 default: help
-
 all: $(ALL)
 
 clean:
 	@rm -fr $(OBJ_DIR) *.o *.exe *.bin *~
 
+# Commande run qui permet des paramètres supplémentaires
 run:
-	./$(ALL)
+	mpiexec -n $(NPROCS) ./$(ALL) $(ARGS)
 
-# Compilação dos .cpp -> .o dentro de obj/
+# Compilation des .cpp -> .o dans obj/
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(DEPS)
-	@mkdir -p $(OBJ_DIR)  # Cria obj/ se não existir
-	$(CXX) $(CXXFLAGS2) -c $< -o $@
+	@mkdir -p $(OBJ_DIR) # Crée obj/ s'il n'existe pas
+	$(MPICXX) $(CXXFLAGS2) -c $< -o $@
 
-# Linkagem final
+# Liaison finale utilisant MPICXX
 simulation.bin: $(OBJECTS)
-	$(CXX) $(CXXFLAGS2) $^ -o $@ $(LIB)
+	$(MPICXX) $(CXXFLAGS2) $^ -o $@ $(LIB)
 
 help:
-	@echo "Available targets : "
-	@echo "    all            : compile all executables"
-	@echo "Add DEBUG=yes to compile in debug"
+	@echo "Cibles disponibles : "
+	@echo " all : compile tous les exécutables avec MPI"
+	@echo " run : lance la simulation MPI"
+	@echo "Options :"
+	@echo " NPROCS=N : définit le nombre de processus MPI (défaut: 2)"
+	@echo " ARGS=\"...\" : passe des arguments à la simulation"
+	@echo " Exemple: make run NPROCS=2 ARGS=\"-n 500\""
+	@echo "Ajoutez DEBUG=yes pour compiler en mode debug"
 	@echo "Configuration :"
-	@echo "    CXX      :    $(CXX)"
-	@echo "    CXXFLAGS :    $(CXXFLAGS)"
+	@echo " MPICXX : $(MPICXX)"
+	@echo " CXXFLAGS : $(CXXFLAGS)"
 
 %.html: %.md
 	pandoc -s --toc $< --css=./github-pandoc.css --metadata pagetitle="OS202 - TD1" -o $@
