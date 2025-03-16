@@ -6,6 +6,15 @@ import glob
 
 # Répertoires
 BASE_DIR = "tests"
+RESULTS_DIR = os.path.join(BASE_DIR, "results")
+PERF_DIR = os.path.join(RESULTS_DIR, "performance")
+SPEEDUP_DIR = os.path.join(RESULTS_DIR, "speedup")
+EFFICIENCY_DIR = os.path.join(RESULTS_DIR, "efficacite")
+
+# Créer les répertoires s'ils n'existent pas
+for directory in [RESULTS_DIR, PERF_DIR, SPEEDUP_DIR, EFFICIENCY_DIR]:
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
 def calculer_speedup_et_efficacite(temps_type="T_avancement"):
     """
@@ -171,7 +180,7 @@ def tracer_speedup(amdahl_speedups, gustafson_speedups, temps_type):
     plt.legend()
     
     # Sauvegarder le graphique spécifique
-    output_file = f"speedup_{temps_type.lower()[2:]}.png"
+    output_file = os.path.join(SPEEDUP_DIR, f"speedup_{temps_type.lower()[2:]}.png")
     plt.savefig(output_file)
     plt.close()
     
@@ -207,7 +216,7 @@ def tracer_efficacite(amdahl_efficiencies, gustafson_efficiencies, temps_type):
     plt.legend()
     
     # Sauvegarder le graphique spécifique
-    output_file = f"efficacite_{temps_type.lower()[2:]}.png"
+    output_file = os.path.join(EFFICIENCY_DIR, f"efficacite_{temps_type.lower()[2:]}.png")
     plt.savefig(output_file)
     plt.close()
     
@@ -256,10 +265,11 @@ def tracer_comparaison_speedups(speedups_av, speedups_tot):
     plt.legend()
     
     # Sauvegarder le graphique de comparaison
-    plt.savefig("speedup_comparaison.png")
+    output_file = os.path.join(SPEEDUP_DIR, "speedup_comparaison.png")
+    plt.savefig(output_file)
     plt.close()
     
-    print("Graphique de comparaison des speedups sauvegardé dans speedup_comparaison.png")
+    print(f"Graphique de comparaison des speedups sauvegardé dans {output_file}")
 
 def tracer_comparaison_efficacites(speedups_av, speedups_tot):
     """
@@ -304,13 +314,110 @@ def tracer_comparaison_efficacites(speedups_av, speedups_tot):
     plt.legend()
     
     # Sauvegarder le graphique de comparaison
-    plt.savefig("efficacite_comparaison.png")
+    output_file = os.path.join(EFFICIENCY_DIR, "efficacite_comparaison.png")
+    plt.savefig(output_file)
     plt.close()
     
-    print("Graphique de comparaison des efficacités sauvegardé dans efficacite_comparaison.png")
+    print(f"Graphique de comparaison des efficacités sauvegardé dans {output_file}")
+
+def tracer_performance_par_timestep():
+    """
+    Trace les graphiques de performance par timestep pour Amdahl et Gustafson
+    """
+    # Traiter Amdahl
+    amdahl_dir = "amdahl_500"
+    amdahl_path = os.path.join(BASE_DIR, amdahl_dir)
+    
+    # Créer un graphique pour Amdahl
+    plt.figure(figsize=(12, 7))
+    colors = ['blue', 'red', 'green', 'purple', 'orange', 'brown']
+    
+    # Parcourir les dossiers de threads pour Amdahl
+    thread_dirs = [d for d in os.listdir(amdahl_path) if d.startswith("threads_")]
+    for i, thread_dir in enumerate(sorted(thread_dirs, key=lambda x: int(x.split("_")[1]))):
+        thread_path = os.path.join(amdahl_path, thread_dir)
+        thread_count = thread_dir.split("_")[1]
+        
+        csv_files = glob.glob(os.path.join(thread_path, "*.csv"))
+        
+        if csv_files:
+            all_dfs = []
+            for csv_file in csv_files:
+                try:
+                    df = pd.read_csv(csv_file)
+                    all_dfs.append(df)
+                except:
+                    pass
+            
+            if all_dfs:
+                combined_df = pd.concat(all_dfs)
+                avg_df = combined_df.groupby('TimeStep').mean().reset_index()
+                
+                plt.plot(avg_df['TimeStep'], avg_df['T_avancement'], 
+                         linewidth=2, color=colors[i % len(colors)], 
+                         label=f'{thread_count} threads')
+    
+    plt.xlabel('Pas de Temps (TimeStep)')
+    plt.ylabel('Temps de Calcul (secondes)')
+    plt.title(f'Performance par Timestep - Amdahl (Taille=500)')
+    plt.grid(True)
+    plt.legend()
+    
+    output_file = os.path.join(PERF_DIR, f"{amdahl_dir}_performance_timestep.png")
+    plt.savefig(output_file)
+    plt.close()
+    
+    print(f"Graphique de performance Amdahl sauvegardé dans {output_file}")
+    
+    # Traiter Gustafson
+    gustafson_dir = "gustafson_204"
+    gustafson_path = os.path.join(BASE_DIR, gustafson_dir)
+    
+    plt.figure(figsize=(12, 7))
+    
+    thread_dirs = [d for d in os.listdir(gustafson_path) if d.startswith("threads_")]
+    for i, thread_dir in enumerate(sorted(thread_dirs, key=lambda x: int(x.split("_")[1]))):
+        thread_path = os.path.join(gustafson_path, thread_dir)
+        parts = thread_dir.split("_")
+        thread_count = parts[1]
+        size = parts[3] if len(parts) > 3 else "?"
+        
+        csv_files = glob.glob(os.path.join(thread_path, "*.csv"))
+        
+        if csv_files:
+            all_dfs = []
+            for csv_file in csv_files:
+                try:
+                    df = pd.read_csv(csv_file)
+                    all_dfs.append(df)
+                except:
+                    pass
+            
+            if all_dfs:
+                combined_df = pd.concat(all_dfs)
+                avg_df = combined_df.groupby('TimeStep').mean().reset_index()
+                
+                plt.plot(avg_df['TimeStep'], avg_df['T_avancement'], 
+                         linewidth=2, color=colors[i % len(colors)], 
+                         label=f'{thread_count} threads (taille={size})')
+    
+    plt.xlabel('Pas de Temps (TimeStep)')
+    plt.ylabel('Temps de Calcul (secondes)')
+    plt.title(f'Performance par Timestep - Gustafson (Base=204)')
+    plt.grid(True)
+    plt.legend()
+    
+    output_file = os.path.join(PERF_DIR, f"{gustafson_dir}_performance_timestep.png")
+    plt.savefig(output_file)
+    plt.close()
+    
+    print(f"Graphique de performance Gustafson sauvegardé dans {output_file}")
 
 # Exécuter les analyses
 try:
+    # Tracer les graphiques de performance par timestep
+    tracer_performance_par_timestep()
+    
     # Calculer les métriques basées sur le temps d'avancement
     resultats_av = calculer_speedup_et_efficacite("T_avancement")
     
@@ -329,6 +436,8 @@ try:
     tracer_comparaison_speedups(resultats_av, resultats_tot)
     tracer_comparaison_efficacites(resultats_av, resultats_tot)
     
-    print("Analyse terminée!")
+    print("\nAnalyse terminée avec succès!")
+    print(f"Tous les graphiques ont été sauvegardés dans les sous-répertoires de {RESULTS_DIR}")
+
 except Exception as e:
     print(f"Erreur lors de l'analyse: {e}")
