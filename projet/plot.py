@@ -7,7 +7,10 @@ import re
 
 # Configurations
 BASE_DIR = "tests"
-OUTPUT_DIR = "."  # Dossier racine pour sauvegarder les graphiques
+RESULTS_DIR = os.path.join(BASE_DIR, "results")  # Nouvelle destination pour les graphiques
+
+# Créer le répertoire de résultats s'il n'existe pas
+os.makedirs(RESULTS_DIR, exist_ok=True)
 
 # Vérifier que le dossier de tests existe
 if not os.path.exists(BASE_DIR):
@@ -84,7 +87,7 @@ plt.title(f"Temps moyen de calcul par taille de grille (MPI avec 2 processus)")
 plt.legend()
 plt.grid(True)
 
-output_file = os.path.join(OUTPUT_DIR, "timing_curves_by_grid_size.png")
+output_file = os.path.join(RESULTS_DIR, "timing_curves_by_grid_size.png")
 plt.savefig(output_file)
 plt.close()
 
@@ -162,7 +165,7 @@ if sizes_for_plot:
     plt.grid(True)
     plt.legend()
     
-    output_file = os.path.join(OUTPUT_DIR, "time_distribution_linear.png")
+    output_file = os.path.join(RESULTS_DIR, "time_distribution_linear.png")
     plt.savefig(output_file)
     plt.close()
     
@@ -180,7 +183,7 @@ if sizes_for_plot:
     plt.grid(True)
     plt.legend()
     
-    output_file = os.path.join(OUTPUT_DIR, "time_distribution_log.png")
+    output_file = os.path.join(RESULTS_DIR, "time_distribution_log.png")
     plt.savefig(output_file)
     plt.close()
     
@@ -199,7 +202,7 @@ if avg_times_by_size:
     
     # Sauvegarder ce tableau dans un fichier CSV
     summary_df = pd.DataFrame(avg_times_by_size, columns=['Taille', 'Temps_moyen'])
-    summary_file = os.path.join(OUTPUT_DIR, "summary_mpi_performance.csv")
+    summary_file = os.path.join(RESULTS_DIR, "summary_mpi_performance.csv")
     summary_df.to_csv(summary_file, index=False)
     print(f"\nRécapitulatif sauvegardé dans {summary_file}")
 
