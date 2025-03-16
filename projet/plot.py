@@ -7,7 +7,12 @@ import re
 
 # Configurations
 BASE_DIR = "tests"
-OUTPUT_DIR = "."  # Dossier racine pour sauvegarder les graphiques
+RESULTS_DIR = os.path.join(BASE_DIR, "results")  # Nova pasta principal para resultados dentro de tests
+COMPARISON_DIR = os.path.join(RESULTS_DIR, "comparison")  # Subpasta para comparações
+
+# Criar as pastas se não existirem
+os.makedirs(RESULTS_DIR, exist_ok=True)
+os.makedirs(COMPARISON_DIR, exist_ok=True)
 
 # Rechercher les répertoires Amdahl et Gustafson
 amdal_dirs = [d for d in os.listdir(BASE_DIR) if d.startswith("amdal_")]
@@ -75,7 +80,8 @@ def traiter_repertoire_test(test_dir, test_type):
     plt.legend()
     plt.grid(True)
     
-    output_file = os.path.join(OUTPUT_DIR, f"timing_curves_{test_dir}.png")
+    # Salvar na pasta results
+    output_file = os.path.join(RESULTS_DIR, f"timing_curves_{test_dir}.png")
     plt.savefig(output_file)
     plt.close()
     
@@ -145,7 +151,8 @@ if amdal_dirs and gustafson_dirs:
             plt.legend()
             plt.grid(True)
             
-            output_file = os.path.join(OUTPUT_DIR, f"comparison_{thread_count}_threads.png")
+            # Salvar na pasta comparison dentro de results
+            output_file = os.path.join(COMPARISON_DIR, f"comparison_{thread_count}_threads.png")
             plt.savefig(output_file)
             plt.close()
             
