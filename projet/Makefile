@@ -16,6 +16,9 @@ else
 $(error Plateforme invalide! Utilisez PLATFORM=linux, PLATFORM=msys2 ou PLATFORM=osx)
 endif
 
+# Nombre de threads OpenMP - peut être défini en ligne de commande
+OMP_NUM_THREADS ?= 6
+
 # Utiliser uniquement MPICXX et LIB du fichier .inc
 # Ajouter des flags spécifiques pour C++
 CXXFLAGS += -std=c++17 -Iinclude # Ajoute le répertoire include
@@ -27,9 +30,6 @@ else
 CXXFLAGS2 = $(CXXFLAGS) -O2 -march=native -Wall
 CXXFLAGS += -O3 -march=native -Wall
 endif
-
-# Nombre de processus MPI - peut être défini en ligne de commande
-NPROCS ?= 2
 
 # Paramètres de simulation - passés via ligne de commande
 ARGS ?=
@@ -48,9 +48,9 @@ all: $(ALL)
 clean:
 	@rm -fr $(OBJ_DIR) *.o *.exe *.bin *~
 
-# Commande run qui permet des paramètres supplémentaires
+# Commande run qui permet de spécifier le nombre de threads OpenMP
 run:
-	mpiexec -n $(NPROCS) ./$(ALL) $(ARGS)
+	export OMP_NUM_THREADS=$(OMP_NUM_THREADS) && mpiexec -n 2 --bind-to none ./$(ALL) $(ARGS)
 
 # Compilation des .cpp -> .o dans obj/
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(DEPS)
